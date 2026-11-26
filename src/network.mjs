@@ -26,7 +26,10 @@ export async function retryMonitorRead(url, body, request = json, wait = ms =>
   new Promise(resolve => setTimeout(resolve, ms)), random = Math.random) {
   const readGet = body === undefined && [network.faucet + '/chain', network.faucet + '/limits',
     network.gateway + '/v1/models'].includes(url)
-  if (!readGet) throw new Error('UNAPPROVED_MONITOR_READ')
+  const readRpc = url === network.rpc && body?.jsonrpc === '2.0' && body.id === 1 &&
+    ['chain_getBlockHash', 'chain_getFinalizedHead', 'state_getRuntimeVersion', 'chain_getHeader']
+      .includes(body.method) && Array.isArray(body.params)
+  if (!readGet && !readRpc) throw new Error('UNAPPROVED_MONITOR_READ')
   for (let attempt = 0; ; attempt++) {
     try { return await request(url, body) } catch (error) {
       if (attempt >= 2 || !transientReadError(error)) throw error
@@ -86,11 +89,17 @@ async function verifyNetworkHttp(request) {
 
 export async function verifyNetwork(request = json, connect = request === json ? connectFlopApi : undefined) {
   if (!connect) return verifyNetworkHttp(request)
-  const [chain, api] = await Promise.all([
-    request(network.faucet + '/chain'),
-    connect(network.ws, undefined, { expectedGenesisHash: network.genesis, timeoutMs: 12000 })
-  ])
+  let api
   try {
+    api = await connect(network.ws, undefined, { expectedGenesisHash: network.genesis, timeoutMs: 12000 })
+  } catch (error) {
+    // Some hosted environments cannot complete the WS handshake. Only a transport
+    // failure permits fallback; a genesis or runtime error must never be masked.
+    if (!/RPC unreachable|connection .*timed out|WebSocket.*(closed|timeout)/i.test(error?.message ?? '')) throw error
+    return verifyNetworkHttp(request)
+  }
+  try {
+    const chain = await request(network.faucet + '/chain')
     validateChain(api.genesisHash.toHex(), chain)
     const finalized = await api.rpc.chain.getFinalizedHead()
     const hash = finalized.toHex()

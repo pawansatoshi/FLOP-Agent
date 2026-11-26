@@ -8,4 +8,5 @@
 - Kept inference purchasing and scored execution disabled pending Testnet route and settlement qualification.
 - Expanded the production dashboard with mobile status cards, activity charts, GitHub run history, owner-only workflow controls, wallet/faucet fields, and catalog-listed model/miner counts without implying miner reachability.
 - Switched chain verification to the genesis-pinned SDK WebSocket with a bounded fallback to allowlisted idempotent HTTP reads when the WebSocket transport is unavailable. CI and the latest push heartbeat pass; a timer-triggered run is still being verified.
+- Applied the same pinned verification and safe retry policy to the public dashboard API.
 - Confirmed the official Testnet gateway catalog is reachable, but no payable inference route is verified for this agent. Scoring remains disabled.

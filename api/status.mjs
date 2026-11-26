@@ -1,5 +1,6 @@
 import { monitor } from '../src/monitor.mjs'
-import { json } from '../src/network.mjs'
+import { connectFlopApi } from '@flop-labs/sdk'
+import { json, retryMonitorRead } from '../src/network.mjs'
 
 const repository = 'pawansatoshi/FLOP-Agent'
 const root = 'https://raw.githubusercontent.com/' + repository
@@ -67,7 +68,7 @@ export default async function handler(req, res) {
   const publicKey = /^[a-f0-9]{64}$/.test(candidate ?? '') ? candidate : undefined
   let state
   try {
-    state = await monitor({ publicKey })
+    state = await monitor({ publicKey, request: retryMonitorRead, connect: connectFlopApi })
   } catch {
     return res.status(503).json({ error: 'Testnet status temporarily unavailable' })
   }

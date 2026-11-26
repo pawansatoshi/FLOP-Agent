@@ -282,6 +282,12 @@ test('dashboard JavaScript references only elements in the production page', () 
   assert.match(script, /advertised addresses/)
 })
 
+test('public dashboard status uses the pinned SDK and allowlisted retry path', () => {
+  const status = readFileSync(new URL('../api/status.mjs', import.meta.url), 'utf8')
+  assert.match(status, /connectFlopApi/)
+  assert.match(status, /request:\s*retryMonitorRead,\s*connect:\s*connectFlopApi/)
+})
+
 test('monitor retries only allowlisted idempotent reads and only transient errors', async () => {
   let calls = 0
   const wait = async () => {}

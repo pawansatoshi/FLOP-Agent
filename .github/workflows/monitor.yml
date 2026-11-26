@@ -1,0 +1,43 @@
+name: FLOP Testnet heartbeat
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: flop-testnet-heartbeat
+  cancel-in-progress: false
+jobs:
+  heartbeat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - run: npm ci --ignore-scripts
+      - name: Read verified Testnet state
+        env:
+          FLOP_MODE: ${{ vars.FLOP_MODE || 'MONITOR_ONLY' }}
+          FLOP_PUBLIC_KEY: ${{ vars.FLOP_PUBLIC_KEY }}
+        run: node src/cli.mjs monitor report.json
+      - name: Build status page and mobile run summary
+        if: ${{ !cancelled() && hashFiles('report.json') != '' }}
+        run: |
+          node src/dashboard.mjs report.json status.html
+          node src/summary.mjs report.json >> "$GITHUB_STEP_SUMMARY"
+      - name: Save public status snapshot
+        if: ${{ !cancelled() && hashFiles('status.html') != '' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: flop-testnet-status
+          path: |
+            report.json
+            status.html
+          retention-days: 2

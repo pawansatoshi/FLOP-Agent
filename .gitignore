@@ -4,3 +4,9 @@
 .env.*
 __pycache__/
 *.sqlite*
+!.env.example
+node_modules/
+*.seed
+*.sqlite*.lock/
+report.json
+status.html

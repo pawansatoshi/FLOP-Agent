@@ -1,0 +1,26 @@
+{
+  "name": "flop-agent",
+  "version": "0.1.0",
+  "description": "",
+  "scripts": {
+    "test": "node --test",
+    "monitor": "node src/cli.mjs monitor"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pawansatoshi/FLOP-Agent.git"
+  },
+  "keywords": [],
+  "author": "",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/pawansatoshi/FLOP-Agent/issues"
+  },
+  "homepage": "https://github.com/pawansatoshi/FLOP-Agent#readme",
+  "dependencies": {
+    "@flop-labs/sdk": "0.12.1"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'none'; base-uri 'none'; form-action 'none'">
+<title>FLOP-Agent offline identity</title>
+<style>
+body{max-width:36rem;margin:4rem auto;padding:0 1.25rem;font:1rem/1.6 system-ui;color:#19292a;background:#f3f7f5}
+button{font:inherit;padding:.65rem 1rem;border:0;border-radius:.5rem;background:#176341;color:white}
+output{display:block;margin-top:1rem;overflow-wrap:anywhere}
+</style>
+<h1>FLOP-Agent identity</h1>
+<p>Download this page from the reviewed repository and open the local copy offline. Generate once and save the key file. Keep two protected copies before using this identity. Anyone with the key file can sign as your agent.</p>
+<button type="button" id="generate">Generate and download key</button>
+<output id="status" aria-live="polite"></output>
+<script>
+'use strict'
+const button = document.querySelector('#generate')
+const status = document.querySelector('#status')
+button.addEventListener('click', async () => {
+  button.disabled = true
+  let secret
+  try {
+    const pair = await crypto.subtle.generateKey('Ed25519', true, ['sign', 'verify'])
+    const privateKey = await crypto.subtle.exportKey('jwk', pair.privateKey)
+    const rawPublic = new Uint8Array(await crypto.subtle.exportKey('raw', pair.publicKey))
+    const encoded = privateKey.d.replace(/-/g, '+').replace(/_/g, '/')
+    secret = Uint8Array.from(atob(encoded), character => character.charCodeAt(0))
+    if (secret.length !== 32) throw new Error()
+    const url = URL.createObjectURL(new Blob([secret], { type: 'application/octet-stream' }))
+    const link = document.createElement('a')
+    link.href = url
+    link.download = 'flop-agent.seed'
+    link.click()
+    setTimeout(() => URL.revokeObjectURL(url), 60000)
+    status.textContent = 'Your public key is ' + Array.from(rawPublic, byte => byte.toString(16).padStart(2, '0')).join('')
+  } catch {
+    status.textContent = 'Identity generation could not finish in this browser. Check whether a file downloaded before trying again.'
+  } finally {
+    secret?.fill(0)
+  }
+})
+</script>
+</html>

@@ -1,7 +1,12 @@
 {
   "network": "testnet",
-  "sdk_release": null,
-  "gateway": null,
-  "activation_block": null,
-  "evidence_url": null
+  "genesis": "0x918abd58fb16306b30ef3886514cfaebffecb4de43e82b6f8ec4795c43cfd800",
+  "ss58": 42,
+  "decimals": 18,
+  "rpc": "https://testnet.flop.network",
+  "ws": "wss://testnet.flop.network",
+  "faucet": "https://faucet.flop.network",
+  "gateway": "https://gateway.testnet.flop.network",
+  "explorer": "https://testnet.flopscan.io",
+  "activationBlock": null
 }

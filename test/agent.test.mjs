@@ -279,6 +279,7 @@ test('dashboard JavaScript references only elements in the production page', () 
   const referenced = [...script.matchAll(/(?:display|pill)\('([^']+)'/g)].map(match => match[1])
   assert.deepEqual([...new Set(referenced.filter(id => !ids.has(id)))], [])
   assert.match(script, /Catalog only; no payable route verified for this agent/)
+  assert.match(script, /advertised addresses/)
 })
 
 test('monitor retries only allowlisted idempotent reads and only transient errors', async () => {

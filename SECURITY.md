@@ -1,15 +1,19 @@
 # Security
 
-## Create and recover the identity
+## Android identity and recovery
 
-For Android, download the reviewed [offline identity page](dashboard/identity.html) from a specific repository commit. Open the downloaded HTML in an Ed25519 Web Crypto-capable browser after going offline. Generate the key once and save the binary seed file. If the browser denies the download or lacks support, use `node src/cli.mjs identity-init /private/flop-agent.seed` in an owner-controlled environment with persistent storage. The CLI refuses to overwrite an existing file.
+1. Download the reviewed [offline identity page](dashboard/identity.html) from a specific repository commit. Open your local HTML copy in an Ed25519 Web Crypto-capable browser while offline.
+2. Choose a unique passphrase of at least 16 characters. Generate the dedicated identity once and save the encrypted JSON. Keep two copies and store the passphrase separately. The backup uses PBKDF2-SHA-256 with 600,000 iterations, a random salt, and AES-256-GCM with a random IV. The public key is authenticated with the seed.
+3. Select the saved file and verify it with the passphrase. Compare its public key with the one recorded at generation. To recover later, use this same file and passphrase. The page only exposes the seed after you choose **Reveal signing value for GitHub**.
 
-Immediately move the file out of shared Downloads into protected storage. Keep a second copy in an encrypted owner-controlled vault with independent recovery access. The downloaded seed is a raw signing secret, so treat both copies as wallet credentials. Record the public key separately. For a recovery drill, restore the file to an owner-controlled host, restrict it with `chmod 600`, and compare the output of `node src/cli.mjs identity-show /private/flop-agent.seed` against the recorded public key, DID and SS58 address. Preserve the SQLite journal and restore it alongside the wallet.
+If you prefer a persistent owner-controlled Node.js host, `node src/cli.mjs identity-init /private/flop-agent.seed` remains available. It creates an owner-only raw seed and refuses to overwrite files. Back up the seed in an encrypted vault. Use `identity-show` to compare the recovered identity with your recorded public key. A raw seed and the revealed signing value are wallet credentials.
 
-The hosted heartbeat uses only the optional public key. Keep seeds out of chat, repository content, Codespaces logs, workflow inputs, artifacts, and rendered status. This release has no hosted signer. A halted or incompatible runtime requires operator review before any future signing resumes.
+## Authorized GitHub Testnet signer
 
-## Operational boundaries
+In repository **Settings → Environments**, create `flop-testnet-signer`. Restrict deployment branches to `main` and add environment secret `FLOP_ED25519_SEED`. Paste the revealed hex directly into that secret. Clear the offline page and Android clipboard after provisioning. Keep the backup passphrase and encrypted JSON in your own storage. GitHub receives only the signing value.
 
-GitHub Actions receives read-only repository access. Owner-approved local integration is limited to a single grant and uses a durable nonce, local exclusive lock, pinned network and SDK runtime policy. Finality requires the canonical block, exact extrinsic hash, expected faucet transfer event and successful extrinsic. Balance alone cannot identify a grant. The Testnet opening gives zero scored credit.
+Use **Settings → Secrets and variables → Actions → Variables** for repository variable `FLOP_PUBLIC_KEY` (the public 64-character hex) and `FLOP_MODE=INTEGRATION_TEST`. This enables only the bounded Testnet workflow. The signer matches the secret to the pinned public key before any request. A first grant requires a manual **start** dispatch on `main`. The daily GitHub run can only continue that one pending claim. Protect edits to `main` and restrict collaborators who can change signer code or workflows.
 
-For private vulnerability reports, use the repository’s **Security → Report a vulnerability** if available. Keep keys, signed requests and private paths out of public issues.
+The signer step keeps the seed in memory and passes a sanitized environment to Git checkpoint commands. The public `flop-claim-state` branch carries a SQLite journal containing only public addresses, faucet state, timestamps, nonces and chain references. It contains zero signing credentials. The intent must be pushed before a request. A failed push aborts the request. Same-nonce retries and finalized-block scans resume from the branch after runner termination. Preserve the branch to retain the operation history. The read-only dashboard sees only the public claim status and chain references.
+
+Set `FLOP_MODE=HALTED` and cancel any current signer run to stop immediately. Keep seeds out of chat, repository content, workflow inputs, artifacts and dashboards. Use the repository's private vulnerability reporting, if enabled.

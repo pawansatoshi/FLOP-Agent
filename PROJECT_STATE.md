@@ -32,3 +32,11 @@ The [push-triggered heartbeat](https://github.com/pawansatoshi/FLOP-Agent/action
 - [Faucet chain](https://faucet.flop.network/chain) and [limits](https://faucet.flop.network/limits)
 - [Gateway OpenAPI](https://gateway.testnet.flop.network/openapi.json)
 - [Explorer offline wallet](https://testnet.flopscan.io/offline-wallet)
+
+## Unscored integration follow-up
+
+The signer and checkpoint workflow supports an owner-provisioned Ed25519 key and one manually initiated free Testnet claim. The daily trigger can only continue that same claim. The default stays MONITOR_ONLY. The first hosted transaction still requires the owner to provision the secret; no replacement identity was generated.
+
+The gateway wallet capability probe returned HTTP 404 on both documented path aliases. Gateway OpenAPI marks wallet enrollment Devnet-only and describes the disabled-route 404. Testnet connect options returned 200, but connect grants and preflight require a bearer credential. FLOP’s direct-session documentation describes a reachable, opted-in miner endpoint. The published SDK uses the explorer session-offer feed for signed spot offers, and the Testnet feed returned 404. Catalog addresses do not identify reachable miner endpoints. No paid alternative was used.
+
+A read-only settlement verifier now distinguishes a finalized payout on the expected channel from an outstanding challenge or a failed or over-budget extrinsic. Issuing a payment remains disabled pending a qualified Testnet direct endpoint. Official references include the [direct miner procedure](https://docs.flop.network/docs/send-to-specific-miner), the [published SDK](https://www.npmjs.com/package/@flop-labs/sdk/v/0.12.1), [release notes](https://github.com/flop-labs/network/releases), and [offer publication issue #306](https://github.com/flop-labs/network/issues/306).

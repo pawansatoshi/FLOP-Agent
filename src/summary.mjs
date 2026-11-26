@@ -15,6 +15,8 @@ const rows = [
   ['Gateway', state.gateway], ['Models', state.models?.map(model => model.id).join(', ')],
   ['Public DID', state.identity?.did], ['SS58 address', state.identity?.address],
   ['Finalized free balance (Planck)', state.balance?.freePlanck],
+  ['Faucet claim status', state.claim?.status], ['Faucet transaction', state.claim?.transactionHash],
+  ['Faucet cooldown ends (UTC)', state.claim?.cooldownEndsAt], ['Rollover', state.claim?.rollover],
   ['Spend', state.spending], ['Eligible activity', state.eligibleActivity]
 ]
 console.log('# FLOP-Agent Testnet status\n\n| Check | Result |\n| --- | --- |')

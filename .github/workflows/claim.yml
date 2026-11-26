@@ -1,0 +1,50 @@
+name: FLOP unscored faucet integration
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: Start the single authorized grant or reconcile its finalized block
+        type: choice
+        options: [start, reconcile]
+        required: true
+      block_hash:
+        description: Finalized block hash for reconcile
+        type: string
+  schedule:
+    - cron: '41 3 * * *'
+permissions:
+  contents: write
+concurrency:
+  group: flop-testnet-faucet
+  cancel-in-progress: false
+jobs:
+  claim:
+    if: ${{ github.ref == 'refs/heads/main' && vars.FLOP_MODE == 'INTEGRATION_TEST' }}
+    environment: flop-testnet-signer
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - run: npm ci --ignore-scripts
+      - name: Restore faucet journal
+        run: |
+          umask 077
+          bash scripts/claim-journal.sh pull "$RUNNER_TEMP/flop.sqlite"
+      - name: Start or resume the single Testnet claim
+        if: ${{ github.event_name == 'schedule' || inputs.action == 'start' }}
+        env:
+          FLOP_MODE: ${{ vars.FLOP_MODE }}
+          FLOP_PUBLIC_KEY: ${{ vars.FLOP_PUBLIC_KEY }}
+          FLOP_ED25519_SEED: ${{ secrets.FLOP_ED25519_SEED }}
+          FLOP_ACTION: ${{ github.event_name == 'schedule' && 'resume' || 'start' }}
+        run: node src/hosted-claim.mjs "$FLOP_ACTION" "$RUNNER_TEMP/flop.sqlite"
+      - name: Verify finalized transfer
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.action == 'reconcile' }}
+        env:
+          FLOP_MODE: ${{ vars.FLOP_MODE }}
+          FLOP_PUBLIC_KEY: ${{ vars.FLOP_PUBLIC_KEY }}
+          FLOP_BLOCK_HASH: ${{ inputs.block_hash }}
+        run: node src/hosted-claim.mjs reconcile "$RUNNER_TEMP/flop.sqlite" "$FLOP_BLOCK_HASH"

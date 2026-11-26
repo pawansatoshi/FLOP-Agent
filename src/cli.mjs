@@ -1,6 +1,8 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 import { initialize, loadIdentity } from './identity.mjs'
 import { mode, monitor } from './monitor.mjs'
+import { directReadiness } from './direct.mjs'
+import { verifySettlement } from './finality.mjs'
 import { estimateInference } from './inference.mjs'
 import { reconcileClaim, requestClaim } from './faucet.mjs'
 
@@ -12,7 +14,7 @@ try {
   let result
   switch (command) {
     case 'monitor':
-      result = await monitor({ executionMode, publicKey: process.env.FLOP_PUBLIC_KEY })
+      result = await monitor({ executionMode, publicKey: process.env.FLOP_PUBLIC_KEY, journal: process.env.FLOP_JOURNAL })
       if (argument) writeFileSync(argument, JSON.stringify(result, null, 2) + '\n')
       break
     case 'identity-init':
@@ -31,6 +33,17 @@ try {
       const identity = loadIdentity(process.env.FLOP_KEY_FILE)
       if (identity.publicKey !== process.env.FLOP_PUBLIC_KEY) throw new Error('IDENTITY_MISMATCH')
       result = await requestClaim({ path: process.env.FLOP_JOURNAL, identity, executionMode, approved: true })
+      break
+    }
+    case 'direct-readiness':
+      if (executionMode === 'HALTED' || executionMode === 'SCORED_ACTIVE') throw new Error('READ_ONLY_MODE_REQUIRED')
+      result = await directReadiness()
+      break
+    case 'verify-settlement': {
+      if (executionMode === 'HALTED' || executionMode === 'SCORED_ACTIVE') throw new Error('READ_ONLY_MODE_REQUIRED')
+      const [, channel, blockHash, transactionHash, cap] = process.argv.slice(2)
+      if (!/^[1-9][0-9]{0,37}$/.test(cap ?? '')) throw new Error('INVALID_SETTLEMENT_BOUNDS')
+      result = await verifySettlement({ channel, blockHash, transactionHash, maxPlanck: BigInt(cap) })
       break
     }
     case 'estimate':

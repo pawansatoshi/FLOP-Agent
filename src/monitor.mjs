@@ -1,5 +1,6 @@
 import { connectFlopApi } from '@flop-labs/sdk'
 import { network, json, verifyNetwork, validateRuntime, faucetRules } from './network.mjs'
+import { readClaim } from './faucet.mjs'
 import { publicIdentity } from './identity.mjs'
 
 export function mode(value = 'MONITOR_ONLY') {
@@ -9,7 +10,7 @@ export function mode(value = 'MONITOR_ONLY') {
   return value
 }
 
-export async function monitor({ executionMode = mode(), publicKey, request = json } = {}) {
+export async function monitor({ executionMode = mode(), publicKey, request = json, journal } = {}) {
   const result = {
     agent: 'FLOP-Agent', mode: executionMode, network: 'testnet', checkedAt: new Date().toISOString(),
     scoring: 'unscored opening; activation block unverified', eligibleActivity: 0,
@@ -50,6 +51,11 @@ export async function monitor({ executionMode = mode(), publicKey, request = jso
   if (publicKey !== undefined && publicKey !== '') {
     if (!/^[0-9a-f]{64}$/.test(publicKey)) throw new Error('INVALID_PUBLIC_KEY')
     result.identity = publicIdentity(Buffer.from(publicKey, 'hex'))
+    try {
+      result.claim = readClaim(journal, result.identity.address)
+    } catch {
+      result.errors.push('Public faucet journal unavailable')
+    }
     if (result.chain) {
       let api
       try {

@@ -31,3 +31,9 @@ node src/cli.mjs reconcile '<finalized-block-hash-from-explorer>'
 A timeout leaves a pending nonce. Re-running the same command after backoff reconciles that nonce. A known transaction hash returns the pending record and requires finalized block reconciliation. After an interrupted process, verify no process owns the local lock before removing the empty `.lock` directory. Preserve the journal and use the same identity.
 
 For a cost estimate without buying inference, save a public-safe prompt to a file and use `FLOP_MODE=INTEGRATION_TEST FLOP_MODEL=qwen/qwen3-14b FLOP_MAX_TOKENS=64 FLOP_MAX_ESTIMATE=0.001 node src/cli.mjs estimate /path/to/prompt.txt`. This sends the prompt to the official Testnet estimator. Use only text you are prepared to share with the gateway.
+
+## One-time hosted Testnet claim
+
+Follow the [Android provisioning steps](SECURITY.md), then open [FLOP unscored faucet integration](https://github.com/pawansatoshi/FLOP-Agent/actions/workflows/claim.yml) and dispatch **start** once on `main`. A daily continuation at 09:11 IST resumes a pending nonce or a bounded finalized-block scan. If the matching finalized block is already known, dispatch **reconcile** with its block hash to avoid waiting for the scan.
+
+The hosted mode does not start a second grant. Rollover requires verified prior spend and is blocked. `node src/cli.mjs direct-readiness` checks finalized model registry data and the public offer feed. `node src/cli.mjs verify-settlement CHANNEL_HASH BLOCK_HASH TX_HASH MAX_PLANCK` checks an independently identified on-chain settlement. A matching event establishes a channel payout, not that an arbitrary gateway request used that channel.

@@ -40,8 +40,11 @@ ${row('Runtime', state.chain?.runtime)}${row('Finalized height', state.chain?.he
 ${row('Faucet', state.faucet?.status)}${row('Gateway', state.gateway)}</dl></section>
 <section><h2>Agent wallet</h2><dl>${row('DID', state.identity?.did)}${row('SS58 address', state.identity?.address)}
 ${row('Finalized free balance', tokenBalance(state.balance?.freePlanck))}
-${row('Last successful claim', 'No public receipt connected')}
-${row('Next eligible claim', 'Unverified')}</dl></section>
+${row('Last successful claim', state.claim?.finalizedAt)}
+${row('Claim status', state.claim?.status)}
+${row('Claim transaction', state.claim?.transactionHash)}
+${row('Cooldown ends', state.claim?.cooldownEndsAt)}
+${row('Rollover', state.claim?.rollover ?? 'Unverified')}</dl></section>
 <section><h2>Gateway catalog</h2>${models ? '<ul>' + models + '</ul>' : '<p>No verified catalog entries.</p>'}</section>
 <section><h2>Execution and settlement</h2><dl>
 ${row('Spending', state.spending)}${row('Eligible activity', state.eligibleActivity)}

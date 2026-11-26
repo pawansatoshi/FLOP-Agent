@@ -3,7 +3,7 @@ on:
   push:
     branches: [main]
   schedule:
-    - cron: '17 * * * *'
+    - cron: '37 * * * *'
   workflow_dispatch:
 permissions:
   contents: read
@@ -22,9 +22,13 @@ jobs:
         with:
           node-version: '24'
       - run: npm ci --ignore-scripts
+      - name: Restore public faucet journal
+        if: ${{ vars.FLOP_MODE != 'HALTED' }}
+        run: bash scripts/claim-journal.sh pull "$RUNNER_TEMP/flop.sqlite"
       - name: Read verified Testnet state
         env:
           FLOP_MODE: ${{ vars.FLOP_MODE || 'MONITOR_ONLY' }}
+          FLOP_JOURNAL: ${{ runner.temp }}/flop.sqlite
           FLOP_PUBLIC_KEY: ${{ vars.FLOP_PUBLIC_KEY }}
         run: node src/cli.mjs monitor report.json
       - name: Build status page and mobile run summary

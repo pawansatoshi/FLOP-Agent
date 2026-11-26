@@ -171,3 +171,30 @@ test('estimation rejects unavailable miners and quotes over the spending cap', a
   miners = 0
   await assert.rejects(estimateInference(options), /MINERS_UNAVAILABLE/)
 })
+
+test('a pending forced settlement and over-budget payout are rejected', async () => {
+  const { settledPayment } = await import('../src/finality.mjs')
+  const success = { section: 'system', method: 'ExtrinsicSuccess' }
+  const payout = { section: 'computeChannel', method: 'Settled',
+    data: [{ toHex: () => finalized }, '80', '20', '1000'] }
+  const posted = { ...payout, method: 'SettlementPosted' }
+  assert.throws(() => settledPayment([success, posted], finalized, 100n), /SETTLEMENT_MISSING/)
+  assert.throws(() => settledPayment([success, payout], finalized, 99n), /AMOUNT_UNVERIFIED/)
+  assert.throws(() => settledPayment([payout], finalized, 100n), /EXTRINSIC_UNVERIFIED/)
+  assert.equal(settledPayment([success, payout], finalized, 100n).onChainPaymentPlanck, '100')
+})
+
+test('hosted resume cannot create a fresh intent and checkpoint failures prevent submission', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'flop-'))
+  try {
+    const opts = { path: join(dir, 'claims.sqlite'), identity: identityFromSeed(randomBytes(32)),
+      executionMode: 'INTEGRATION_TEST', approved: true, request: fakeRequest, clock: () => now,
+      transport: () => assert.fail('unsafe send') }
+    assert.equal((await requestClaim({ ...opts, resumeOnly: true })).status, 'awaiting-manual-start')
+    await assert.rejects(requestClaim({ ...opts, checkpoint: async () => { throw new Error('sync unavailable') } }),
+      /sync unavailable/)
+    assert.equal((await requestClaim({ ...opts, resumeOnly: true })).status, 'pending')
+  } finally {
+    rmSync(dir, { recursive: true })
+  }
+})

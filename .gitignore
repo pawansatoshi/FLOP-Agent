@@ -10,3 +10,4 @@ node_modules/
 *.sqlite*.lock/
 report.json
 status.html
+flop-agent-encrypted*.json

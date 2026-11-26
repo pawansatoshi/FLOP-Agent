@@ -5,40 +5,123 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'none'; base-uri 'none'; form-action 'none'">
 <title>FLOP-Agent offline identity</title>
 <style>
-body{max-width:36rem;margin:4rem auto;padding:0 1.25rem;font:1rem/1.6 system-ui;color:#19292a;background:#f3f7f5}
-button{font:inherit;padding:.65rem 1rem;border:0;border-radius:.5rem;background:#176341;color:white}
-output{display:block;margin-top:1rem;overflow-wrap:anywhere}
+body{max-width:36rem;margin:2rem auto;padding:0 1.25rem;font:1rem/1.6 system-ui;color:#19292a;background:#f3f7f5}
+button,input{box-sizing:border-box;font:inherit;padding:.55rem;width:100%;margin:.3rem 0 .8rem}
+button{border:0;border-radius:.5rem;background:#176341;color:white}button:disabled{opacity:.5}
+output{display:block;overflow-wrap:anywhere}label{display:block}hr{margin:2rem 0;border:0;border-top:1px solid #adc1b9}
 </style>
 <h1>FLOP-Agent identity</h1>
-<p>Download this page from the reviewed repository and open the local copy offline. Generate once and save the key file. Keep two protected copies before using this identity. Anyone with the key file can sign as your agent.</p>
-<button type="button" id="generate">Generate and download key</button>
+<p>Use a downloaded copy of this page offline. Generate a wallet once, save the encrypted backup in two places, and store its passphrase separately. If you already have a backup, restore it below.</p>
+<label>Backup passphrase <input id="pass" type="password" minlength="16" autocomplete="off"></label>
+<button id="generate" type="button">Generate encrypted backup</button>
+<hr>
+<label>Encrypted FLOP-Agent backup <input id="backup" type="file" accept=".json,application/json"></label>
+<button id="restore" type="button">Verify backup and show public key</button>
+<button id="provision" type="button" disabled>Reveal signing value for GitHub</button>
+<label id="signing-label" hidden>Signing value. Paste directly into the GitHub environment secret. <input id="signing" type="password" readonly autocomplete="off"></label>
+<button id="clear" type="button" hidden>Clear signing value</button>
 <output id="status" aria-live="polite"></output>
 <script>
 'use strict'
-const button = document.querySelector('#generate')
-const status = document.querySelector('#status')
-button.addEventListener('click', async () => {
-  button.disabled = true
-  let secret
+const elements = Object.fromEntries(['pass','generate','backup','restore','provision','signing-label','signing','clear','status']
+  .map(id => [id, document.getElementById(id)]))
+const encoder = new TextEncoder()
+const aad = encoder.encode('flop-agent-ed25519-backup:v1')
+const rounds = 600000
+let verifiedPublicKey
+const hex = bytes => Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('')
+function bytes(text, size) {
+  if (typeof text !== 'string' || text.length !== size * 2 || !/^[a-f0-9]+$/.test(text)) throw new Error()
+  return Uint8Array.from(text.match(/../g), value => parseInt(value, 16))
+}
+async function vaultKey(passphrase, salt) {
+  const encoded = encoder.encode(passphrase)
   try {
-    const pair = await crypto.subtle.generateKey('Ed25519', true, ['sign', 'verify'])
+    const source = await crypto.subtle.importKey('raw', encoded, 'PBKDF2', false, ['deriveKey'])
+    return await crypto.subtle.deriveKey({name:'PBKDF2', salt, iterations:rounds, hash:'SHA-256'}, source,
+      {name:'AES-GCM', length:256}, false, ['encrypt','decrypt'])
+  } finally { encoded.fill(0) }
+}
+function clearSigning() {
+  elements.signing.value = ''
+  elements['signing-label'].hidden = true
+  elements.clear.hidden = true
+}
+function resetVerification() {
+  verifiedPublicKey = undefined
+  elements.provision.disabled = true
+  clearSigning()
+}
+elements.backup.addEventListener('change', resetVerification)
+elements.pass.addEventListener('input', resetVerification)
+elements.clear.addEventListener('click', clearSigning)
+window.addEventListener('pagehide', clearSigning)
+async function loadBackup() {
+  const file = elements.backup.files[0]
+  if (!file || file.size > 4096) throw new Error()
+  const backup = JSON.parse(await file.text())
+  if (backup.version !== 1 || backup.iterations !== rounds) throw new Error()
+  const salt = bytes(backup.salt, 16)
+  const iv = bytes(backup.iv, 12)
+  const publicKey = bytes(backup.publicKey, 32)
+  const ciphertext = bytes(backup.ciphertext, 48)
+  const key = await vaultKey(elements.pass.value, salt)
+  const seed = new Uint8Array(await crypto.subtle.decrypt({name:'AES-GCM', iv,
+    additionalData:new Uint8Array([...aad, ...publicKey])}, key, ciphertext))
+  return { seed, publicKey: backup.publicKey }
+}
+elements.generate.addEventListener('click', async () => {
+  if (elements.pass.value.length < 16) {
+    elements.status.textContent = 'Enter a unique passphrase of at least 16 characters.'
+    return
+  }
+  elements.generate.disabled = true
+  let seed
+  try {
+    const salt = crypto.getRandomValues(new Uint8Array(16))
+    const iv = crypto.getRandomValues(new Uint8Array(12))
+    const pair = await crypto.subtle.generateKey('Ed25519', true, ['sign','verify'])
+    const publicKey = new Uint8Array(await crypto.subtle.exportKey('raw', pair.publicKey))
     const privateKey = await crypto.subtle.exportKey('jwk', pair.privateKey)
-    const rawPublic = new Uint8Array(await crypto.subtle.exportKey('raw', pair.publicKey))
-    const encoded = privateKey.d.replace(/-/g, '+').replace(/_/g, '/')
-    secret = Uint8Array.from(atob(encoded), character => character.charCodeAt(0))
-    if (secret.length !== 32) throw new Error()
-    const url = URL.createObjectURL(new Blob([secret], { type: 'application/octet-stream' }))
+    seed = Uint8Array.from(atob(privateKey.d.replace(/-/g, '+').replace(/_/g, '/')), char => char.charCodeAt(0))
+    const key = await vaultKey(elements.pass.value, salt)
+    const encrypted = await crypto.subtle.encrypt({name:'AES-GCM', iv,
+      additionalData:new Uint8Array([...aad, ...publicKey])}, key, seed)
+    const backup = {version:1, iterations:rounds, salt:hex(salt), iv:hex(iv),
+      publicKey:hex(publicKey), ciphertext:hex(new Uint8Array(encrypted))}
+    const url = URL.createObjectURL(new Blob([JSON.stringify(backup)], {type:'application/json'}))
     const link = document.createElement('a')
     link.href = url
-    link.download = 'flop-agent.seed'
+    link.download = 'flop-agent-encrypted.json'
     link.click()
     setTimeout(() => URL.revokeObjectURL(url), 60000)
-    status.textContent = 'Your public key is ' + Array.from(rawPublic, byte => byte.toString(16).padStart(2, '0')).join('')
+    elements.status.textContent = 'Save the backup and verify it before provisioning. Public key ' + backup.publicKey
   } catch {
-    status.textContent = 'Identity generation could not finish in this browser. Check whether a file downloaded before trying again.'
-  } finally {
-    secret?.fill(0)
-  }
+    elements.status.textContent = 'Generation could not finish. Check whether the backup downloaded before retrying.'
+  } finally { seed?.fill(0) }
+})
+elements.restore.addEventListener('click', async () => {
+  resetVerification()
+  try {
+    const { seed, publicKey } = await loadBackup()
+    seed.fill(0)
+    verifiedPublicKey = publicKey
+    elements.provision.disabled = false
+    elements.status.textContent = 'Verified backup. Public key ' + publicKey
+  } catch { elements.status.textContent = 'Unable to verify the backup with this passphrase.' }
+})
+elements.provision.addEventListener('click', async () => {
+  try {
+    const { seed, publicKey } = await loadBackup()
+    try {
+      if (publicKey !== verifiedPublicKey) throw new Error()
+      elements.signing.value = hex(seed)
+      elements['signing-label'].hidden = false
+      elements.clear.hidden = false
+      elements.signing.focus()
+      elements.signing.select()
+    } finally { seed.fill(0) }
+  } catch { resetVerification() }
 })
 </script>
 </html>

@@ -10,7 +10,7 @@ export function mode(value = 'MONITOR_ONLY') {
   return value
 }
 
-export async function monitor({ executionMode = mode(), publicKey, request = json, journal } = {}) {
+export async function monitor({ executionMode = mode(), publicKey, request = json, journal, connect } = {}) {
   const result = {
     agent: 'FLOP-Agent', mode: executionMode, network: 'testnet', checkedAt: new Date().toISOString(),
     scoring: 'unscored opening; activation block unverified', eligibleActivity: 0,
@@ -20,7 +20,8 @@ export async function monitor({ executionMode = mode(), publicKey, request = jso
   if (executionMode === 'SCORED_ACTIVE') throw new Error('SCORING_UNVERIFIED')
 
   const [chain, faucet, gateway] = await Promise.allSettled([
-    verifyNetwork(request), request(network.faucet + '/limits'), request(network.gateway + '/v1/models')
+    verifyNetwork(request, connect ?? (request === json ? connectFlopApi : undefined)),
+    request(network.faucet + '/limits'), request(network.gateway + '/v1/models')
   ])
   if (chain.status === 'fulfilled') {
     const { runtime, finalized, height } = chain.value

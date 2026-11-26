@@ -1,4 +1,4 @@
-import { SUPPORTED_SPEC_VERSIONS } from '@flop-labs/sdk'
+import { connectFlopApi, SUPPORTED_SPEC_VERSIONS } from '@flop-labs/sdk'
 import network from '../network.json' with { type: 'json' }
 
 export { network }
@@ -15,10 +15,6 @@ export async function json(url, body) {
   return response.json()
 }
 
-const monitorRpcMethods = new Set([
-  'chain_getBlockHash', 'chain_getFinalizedHead', 'state_getRuntimeVersion', 'chain_getHeader'
-])
-
 function transientReadError(error) {
   if (/^HTTP_(429|5\d\d)$/.test(error?.message ?? '')) return true
   if (error?.name === 'AbortError' || error?.name === 'TimeoutError' || error?.name === 'TypeError') return true
@@ -30,9 +26,7 @@ export async function retryMonitorRead(url, body, request = json, wait = ms =>
   new Promise(resolve => setTimeout(resolve, ms)), random = Math.random) {
   const readGet = body === undefined && [network.faucet + '/chain', network.faucet + '/limits',
     network.gateway + '/v1/models'].includes(url)
-  const readRpc = url === network.rpc && body?.jsonrpc === '2.0' && body.id === 1 &&
-    monitorRpcMethods.has(body.method) && Array.isArray(body.params)
-  if (!readGet && !readRpc) throw new Error('UNAPPROVED_MONITOR_READ')
+  if (!readGet) throw new Error('UNAPPROVED_MONITOR_READ')
   for (let attempt = 0; ; attempt++) {
     try { return await request(url, body) } catch (error) {
       if (attempt >= 2 || !transientReadError(error)) throw error
@@ -70,7 +64,7 @@ export function validateRuntime(runtime) {
       !SUPPORTED_SPEC_VERSIONS.includes(runtime.specVersion)) throw new Error('RUNTIME_INCOMPATIBLE')
 }
 
-export async function verifyNetwork(request = json) {
+async function verifyNetworkHttp(request) {
   const [genesis, chain, finalized] = await Promise.all([
     rpc('chain_getBlockHash', [0], request),
     request(network.faucet + '/chain'),
@@ -88,6 +82,30 @@ export async function verifyNetwork(request = json) {
   if (runtime.specVersion !== currentRuntime.specVersion) throw new Error('RUNTIME_TRANSITION')
   if (!/^0x[0-9a-f]+$/.test(header?.number)) throw new Error('INVALID_FINALIZED_HEADER')
   return { chain, finalized, runtime: runtime.specVersion, height: Number(BigInt(header.number)) }
+}
+
+export async function verifyNetwork(request = json, connect = request === json ? connectFlopApi : undefined) {
+  if (!connect) return verifyNetworkHttp(request)
+  const [chain, api] = await Promise.all([
+    request(network.faucet + '/chain'),
+    connect(network.ws, undefined, { expectedGenesisHash: network.genesis, timeoutMs: 12000 })
+  ])
+  try {
+    validateChain(api.genesisHash.toHex(), chain)
+    const finalized = await api.rpc.chain.getFinalizedHead()
+    const hash = finalized.toHex()
+    const [at, currentRuntime, header] = await Promise.all([
+      api.at(hash), Promise.resolve(api.runtimeVersion.toJSON()), api.rpc.chain.getHeader(hash)
+    ])
+    const runtime = at.runtimeVersion.toJSON()
+    validateRuntime(runtime)
+    validateRuntime(currentRuntime)
+    if (runtime.specVersion !== currentRuntime.specVersion) throw new Error('RUNTIME_TRANSITION')
+    return { chain, finalized: hash, runtime: runtime.specVersion,
+      height: Number(BigInt(header.number.toString())) }
+  } finally {
+    await api.disconnect()
+  }
 }
 
 export function faucetRules(data, now = Date.now()) {

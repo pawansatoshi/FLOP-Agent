@@ -11,12 +11,17 @@ Default mode is **MONITOR_ONLY**. The public Testnet project page reports an uns
 
 - A public-key-only check verified a finalized account balance through the SDK's WebSocket connection. The address used for this check is a published verifier key, not an agent wallet.
 
+## Build and deployment evidence
+
+Implementation commit [fa230ea](https://github.com/pawansatoshi/FLOP-Agent/commit/fa230eabcb328c95e52929fd0c95dd1bf96ec669) passed all 11 local tests. The staged-source credential-pattern scan found no matches, and npm audit reported zero vulnerabilities. [GitHub CI](https://github.com/pawansatoshi/FLOP-Agent/actions/runs/45809684290) passed install, tests and audit.
+
+The [push-triggered heartbeat](https://github.com/pawansatoshi/FLOP-Agent/actions/runs/45809684370) passed live Testnet verification and produced the mobile summary and `flop-testnet-status` artifact. The hourly schedule is configured at minute 17. A cron-triggered run has not yet been observed. The monitor uses public endpoints and GitHub-hosted runners for this public repository.
+
 ## Remaining release gates
 
 - The dedicated production key was not created or provisioned. The owner must keep the generated seed and recovery copy in owner-controlled storage.
 - A live faucet claim has not been submitted. Tests exercise simulated transport, durable reconciliation and event matching. The CLI requires explicit opt-in for an unscored claim.
 - The Testnet gateway purchase route, native direct session spending, request-to-finalized-settlement attribution and eligibility remain unverified. Inference purchasing and rollover are disabled. No transaction, settlement or reward is recorded.
-- The scheduled read-only GitHub workflow is configured. Check the exact published commit and Actions run history for execution evidence. The dashboard is available as a workflow summary and status artifact after a successful run.
 - Local transaction operations require persistent owner-controlled storage. There is no cloud signer or autonomous scheduled transaction workflow in this release.
 
 ## Official references

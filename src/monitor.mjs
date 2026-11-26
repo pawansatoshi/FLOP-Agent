@@ -1,5 +1,5 @@
 import { connectFlopApi } from '@flop-labs/sdk'
-import { network, json, verifyNetwork, validateRuntime, faucetRules } from './network.mjs'
+import { network, json, verifyNetwork, validateRuntime, faucetRules, publicReadFailure } from './network.mjs'
 import { readClaim } from './faucet.mjs'
 import { publicIdentity } from './identity.mjs'
 
@@ -25,18 +25,20 @@ export async function monitor({ executionMode = mode(), publicKey, request = jso
   if (chain.status === 'fulfilled') {
     const { runtime, finalized, height } = chain.value
     result.chain = { runtime, finalized, height }
-  } else result.errors.push('Testnet identity or runtime verification failed')
+  } else result.errors.push('Testnet identity or runtime verification failed: ' + publicReadFailure(chain.reason))
 
-  if (faucet.status === 'fulfilled' && result.chain) {
+  if (faucet.status === 'fulfilled') {
     result.faucet = { status: 'unverified', asOf: faucet.value?.asOf }
     try {
       const rules = faucetRules(faucet.value)
-      result.faucet = { status: 'open', grantFlop: rules.grantFlop, cooldownSeconds: rules.cooldownSeconds,
-        asOf: faucet.value.asOf }
+      if (result.chain) {
+        result.faucet = { status: 'open', grantFlop: rules.grantFlop, cooldownSeconds: rules.cooldownSeconds,
+          asOf: faucet.value.asOf }
+      } else result.errors.push('Faucet limits available; chain identity must verify before use')
     } catch {
       result.errors.push('Faucet rules or freshness could not be verified')
     }
-  } else result.errors.push('Faucet status unavailable')
+  } else result.errors.push('Faucet status unavailable: ' + publicReadFailure(faucet.reason))
 
   if (gateway.status === 'fulfilled' && Array.isArray(gateway.value?.data)) {
     result.gateway = 'catalog reachable'
@@ -46,7 +48,8 @@ export async function monitor({ executionMode = mode(), publicKey, request = jso
         entry['x-flop'].price_sources : []).map(source => source?.miner_address).filter(
         address => typeof address === 'string' && /^[1-9A-HJ-NP-Za-km-z]{45,50}$/.test(address)))]
     }))
-  } else result.errors.push('Gateway catalog unavailable')
+  } else result.errors.push('Gateway catalog unavailable: ' + (gateway.status === 'rejected' ?
+    publicReadFailure(gateway.reason) : 'INVALID_CATALOG'))
 
   if (publicKey !== undefined && publicKey !== '') {
     if (!/^[0-9a-f]{64}$/.test(publicKey)) throw new Error('INVALID_PUBLIC_KEY')

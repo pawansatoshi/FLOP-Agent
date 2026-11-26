@@ -8,7 +8,7 @@ import { d10AgentClaimMessage } from '@flop-labs/sdk'
 import { claimDecision, requestClaim, verifyTransfer } from '../src/faucet.mjs'
 import { identityFromSeed, initialize, loadIdentity, publicIdentity } from '../src/identity.mjs'
 import { mode, monitor } from '../src/monitor.mjs'
-import { faucetRules, network, validateChain, validateRuntime, verifyNetwork } from '../src/network.mjs'
+import { faucetRules, network, publicReadFailure, retryMonitorRead, validateChain, validateRuntime, verifyNetwork } from '../src/network.mjs'
 import { activity, nextHeartbeat } from '../api/status.mjs'
 
 const finalized = '0x' + 'ab'.repeat(32)
@@ -238,4 +238,26 @@ test('dashboard JavaScript references only elements in the production page', () 
   const ids = new Set([...html.matchAll(/\bid="([^"]+)"/g)].map(match => match[1]))
   const referenced = [...script.matchAll(/(?:display|pill)\('([^']+)'/g)].map(match => match[1])
   assert.deepEqual([...new Set(referenced.filter(id => !ids.has(id)))], [])
+})
+
+test('monitor retries only allowlisted reads and only transient errors', async () => {
+  let calls = 0
+  const wait = async () => {}
+  const result = await retryMonitorRead(network.rpc, { jsonrpc: '2.0', id: 1,
+    method: 'chain_getFinalizedHead', params: [] }, async () => {
+    if (++calls < 3) throw Object.assign(new Error('temporary'), { name: 'TypeError' })
+    return { result: finalized }
+  }, wait, () => 0)
+  assert.equal(result.result, finalized)
+  assert.equal(calls, 3)
+  calls = 0
+  await assert.rejects(retryMonitorRead(network.rpc, { jsonrpc: '2.0', id: 1,
+    method: 'author_submitExtrinsic', params: ['0x'] }, async () => { calls++ }, wait), /UNAPPROVED_MONITOR_READ/)
+  await assert.rejects(retryMonitorRead(network.faucet + '/v1/testnet/agent-claims', {},
+    async () => { calls++ }, wait), /UNAPPROVED_MONITOR_READ/)
+  await assert.rejects(retryMonitorRead(network.rpc, { jsonrpc: '2.0', id: 1,
+    method: 'chain_getBlockHash', params: [0] }, async () => { calls++; throw new Error('RUNTIME_INCOMPATIBLE') }, wait), /RUNTIME_INCOMPATIBLE/)
+  assert.equal(calls, 1)
+  assert.equal(publicReadFailure(new Error('RUNTIME_INCOMPATIBLE')), 'RUNTIME_INCOMPATIBLE')
+  assert.equal(publicReadFailure(new Error('sensitive endpoint detail')), 'READ_FAILED')
 })

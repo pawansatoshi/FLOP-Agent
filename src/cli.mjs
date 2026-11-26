@@ -1,4 +1,5 @@
 import { readFileSync, writeFileSync } from 'node:fs'
+import { retryMonitorRead } from './network.mjs'
 import { initialize, loadIdentity } from './identity.mjs'
 import { mode, monitor } from './monitor.mjs'
 import { directReadiness } from './direct.mjs'
@@ -14,7 +15,8 @@ try {
   let result
   switch (command) {
     case 'monitor':
-      result = await monitor({ executionMode, publicKey: process.env.FLOP_PUBLIC_KEY, journal: process.env.FLOP_JOURNAL })
+      result = await monitor({ executionMode, publicKey: process.env.FLOP_PUBLIC_KEY,
+        journal: process.env.FLOP_JOURNAL, request: retryMonitorRead })
       if (argument) writeFileSync(argument, JSON.stringify(result, null, 2) + '\n')
       break
     case 'identity-init':

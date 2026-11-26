@@ -33,6 +33,7 @@ function renderRuns(runs) {
 async function refresh(){try{
   const response=await fetch('/api/status',{headers:{accept:'application/json'}});if(!response.ok)throw new Error();const state=await response.json()
   display('updated','Updated '+time.format(new Date(state.checkedAt))+' IST');display('mode',state.executionMode??'MONITOR_ONLY')
+  const errors=Array.isArray(state.errors)?state.errors.filter(v=>typeof v==='string').slice(0,5):[];byId('errors').hidden=errors.length===0;display('errors',errors.length?'Status details · '+errors.join(' · '):'')
   display('network-status',state.chain?'Connected':'Unavailable');display('chain-short',state.chain?`Block ${state.chain.height} · runtime ${state.chain.runtime}`:'Waiting for verified Testnet')
   const hb=state.lastHeartbeat;display('heartbeat-time',hb?time.format(new Date(hb.createdAt)):'No heartbeat yet');display('heartbeat-result',hb?`${hb.event} · ${hb.conclusion??hb.status}`:'No GitHub run recorded')
   nextRunAt=Date.parse(state.nextScheduledAt);display('next-run',Number.isFinite(nextRunAt)?remaining(nextRunAt):'Unavailable');display('next-run-label',Number.isFinite(nextRunAt)?`Hourly · ${time.format(new Date(nextRunAt))} IST`:'Hourly · GitHub Actions')

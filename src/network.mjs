@@ -15,6 +15,41 @@ export async function json(url, body) {
   return response.json()
 }
 
+const monitorRpcMethods = new Set([
+  'chain_getBlockHash', 'chain_getFinalizedHead', 'state_getRuntimeVersion', 'chain_getHeader'
+])
+
+function transientReadError(error) {
+  if (/^HTTP_(429|5\d\d)$/.test(error?.message ?? '')) return true
+  if (error?.name === 'AbortError' || error?.name === 'TimeoutError' || error?.name === 'TypeError') return true
+  return ['ECONNRESET', 'ETIMEDOUT', 'ENOTFOUND', 'EAI_AGAIN', 'ECONNREFUSED',
+    'UND_ERR_CONNECT_TIMEOUT', 'UND_ERR_SOCKET'].includes(error?.cause?.code)
+}
+
+export async function retryMonitorRead(url, body, request = json, wait = ms =>
+  new Promise(resolve => setTimeout(resolve, ms)), random = Math.random) {
+  const readGet = body === undefined && [network.faucet + '/chain', network.faucet + '/limits',
+    network.gateway + '/v1/models'].includes(url)
+  const readRpc = url === network.rpc && body?.jsonrpc === '2.0' && body.id === 1 &&
+    monitorRpcMethods.has(body.method) && Array.isArray(body.params)
+  if (!readGet && !readRpc) throw new Error('UNAPPROVED_MONITOR_READ')
+  for (let attempt = 0; ; attempt++) {
+    try { return await request(url, body) } catch (error) {
+      if (attempt >= 2 || !transientReadError(error)) throw error
+      await wait(Math.min(250 * (2 ** attempt) + Math.floor(random() * 250), 2000))
+    }
+  }
+}
+
+export function publicReadFailure(error) {
+  const message = error?.message ?? ''
+  if (/^HTTP_\d{3}$/.test(message)) return message
+  if (/^[A-Z][A-Z0-9_]{2,63}$/.test(message)) return message
+  if (error?.name === 'AbortError' || error?.name === 'TimeoutError') return 'REQUEST_TIMEOUT'
+  if (error?.name === 'TypeError') return 'NETWORK_UNREACHABLE'
+  return 'READ_FAILED'
+}
+
 export async function rpc(method, params = [], request = json) {
   const response = await request(network.rpc, { jsonrpc: '2.0', id: 1, method, params })
   if (response?.id !== 1 || response.error || !Object.hasOwn(response, 'result')) {

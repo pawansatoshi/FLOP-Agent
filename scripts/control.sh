@@ -21,7 +21,10 @@ case "$1" in
 esac
 key=${FLOP_PUBLIC_KEY:-}
 [[ "$key" =~ ^[a-f0-9]{64}$ ]] || key=
-blob=$(jq -nc --arg mode "$mode" --arg publicKey "$key" '{mode:$mode,publicKey:$publicKey}' | git hash-object -w --stdin)
+execution_mode=${FLOP_EXECUTION_MODE:-MONITOR_ONLY}
+[[ "$execution_mode" == INTEGRATION_TEST ]] || execution_mode=MONITOR_ONLY
+blob=$(jq -nc --arg mode "$mode" --arg executionMode "$execution_mode" --arg publicKey "$key" \
+  '{mode:$mode,executionMode:$executionMode,publicKey:$publicKey}' | git hash-object -w --stdin)
 tree=$(printf '100644 blob %s\tcontrol.json\n' "$blob" | git mktree)
 parent=()
 if [[ "$status" == 0 ]]; then parent=(-p "$remote"); fi

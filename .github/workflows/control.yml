@@ -7,15 +7,15 @@ on:
         type: choice
         options: [start, stop, halt]
         required: true
-permissions:
-  contents: write
-  actions: write
+permissions: {}
 concurrency:
   group: flop-operator-control
   cancel-in-progress: false
 jobs:
-  control:
+  record-control:
     if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -23,10 +23,18 @@ jobs:
       - name: Update signer control
         env:
           FLOP_PUBLIC_KEY: ${{ vars.FLOP_PUBLIC_KEY }}
+          FLOP_EXECUTION_MODE: ${{ vars.FLOP_MODE || 'MONITOR_ONLY' }}
           CONTROL_ACTION: ${{ inputs.action }}
         run: bash scripts/control.sh "$CONTROL_ACTION"
+  dispatch-signer:
+    needs: record-control
+    if: github.ref == 'refs/heads/main' && inputs.action == 'start'
+    permissions:
+      actions: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
       - name: Dispatch bounded unscored claim
-        if: inputs.action == 'start'
         env:
           GH_TOKEN: ${{ github.token }}
           FLOP_MODE: ${{ vars.FLOP_MODE }}
@@ -36,8 +44,15 @@ jobs:
           else
             echo 'Signer requires INTEGRATION_TEST before dispatch.'
           fi
+  cancel-signer:
+    needs: record-control
+    if: github.ref == 'refs/heads/main' && inputs.action == 'halt'
+    permissions:
+      actions: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
       - name: Cancel active signer runs
-        if: always() && inputs.action == 'halt'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |

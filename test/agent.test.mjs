@@ -9,6 +9,7 @@ import { claimDecision, requestClaim, verifyTransfer } from '../src/faucet.mjs'
 import { identityFromSeed, initialize, loadIdentity, publicIdentity } from '../src/identity.mjs'
 import { mode, monitor } from '../src/monitor.mjs'
 import { faucetRules, network, validateChain, validateRuntime, verifyNetwork } from '../src/network.mjs'
+import { activity, nextHeartbeat } from '../api/status.mjs'
 
 const finalized = '0x' + 'ab'.repeat(32)
 const chain = { network: 'testnet', genesisHash: network.genesis, decimals: 18, ss58Format: 42,
@@ -211,4 +212,22 @@ test('stopping after checkpoint prevents a hosted faucet submission', async () =
       transport: () => assert.fail('unsafe send')
     }), /HALTED/)
   } finally { rmSync(dir, { recursive: true }) }
+})
+
+test('dashboard schedule reports the next UTC minute 07 without rounding down', () => {
+  assert.equal(nextHeartbeat(new Date('2026-11-26T13:06:30Z')), '2026-11-26T13:07:00.000Z')
+  assert.equal(nextHeartbeat(new Date('2026-11-26T13:07:00Z')), '2026-11-26T14:07:00.000Z')
+})
+
+test('dashboard activity chart counts only monitor runs within the last 24 hours', () => {
+  const now = Date.parse('2026-11-26T13:10:00Z')
+  const series = activity([
+    { workflow: 'monitor.yml', createdAt: new Date(now - 1000).toISOString(), conclusion: 'success' },
+    { workflow: 'monitor.yml', createdAt: new Date(now - 1000).toISOString(), conclusion: 'failure' },
+    { workflow: 'claim.yml', createdAt: new Date(now - 1000).toISOString(), conclusion: 'success' },
+    { workflow: 'monitor.yml', createdAt: new Date(now - 25 * 60 * 60 * 1000).toISOString(), conclusion: 'success' }
+  ], now)
+  assert.equal(series.length, 12)
+  assert.equal(series.at(-1).total, 2)
+  assert.equal(series.at(-1).successful, 1)
 })

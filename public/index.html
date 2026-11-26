@@ -1,27 +1,21 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
-<title>FLOP-Agent · Testnet dashboard</title>
-<link rel="stylesheet" href="/style.css">
-<script type="module" src="/dashboard.js"></script>
+<meta name="theme-color" content="#f5f5f7"><title>FLOP-Agent · Control Center</title>
+<link rel="stylesheet" href="/style.css"><script type="module" src="/dashboard.js"></script>
 </head>
-<body>
-<main>
-<header><a class="brand" href="/">FLOP-Agent</a><a href="https://testnet.flopscan.io/">FLOPScan ↗</a></header>
-<div class="hero"><p class="eyebrow">FLOP NETWORK TESTNET</p><h1>Agent dashboard</h1><p id="updated" role="status">Checking Testnet and GitHub Actions…</p></div>
-<div class="grid">
-<section><h2>Wallet</h2><strong class="balance" id="balance">—</strong><dl><dt>SS58 address</dt><dd id="address">Awaiting wallet</dd><dt>Decentralized identifier</dt><dd id="did">Awaiting wallet</dd></dl><a href="/identity.html" download="flop-agent-identity.html">Download offline wallet tool ↓</a></section>
-<section><h2>Faucet</h2><dl><dt>Availability</dt><dd id="faucet">Checking</dd><dt>Claim</dt><dd id="claim">Awaiting wallet</dd><dt>Cooldown</dt><dd id="cooldown">—</dd><dt>Rollover</dt><dd id="rollover">—</dd></dl></section>
-<section><h2>Inference and scoring</h2><dl><dt>Gateway</dt><dd id="gateway">Checking</dd><dt>Models</dt><dd id="models">—</dd><dt>Verified spend</dt><dd id="spend">0 recorded FLOP</dd><dt>Settlement history</dt><dd id="settlements">No agent settlements recorded</dd><dt>Scoring</dt><dd id="scoring">Activation unverified</dd></dl></section>
-<section><h2>Execution controls</h2><dl><dt>Control state</dt><dd id="control">Checking</dd><dt>Finalized chain</dt><dd id="chain">Checking</dd></dl><p>Controls open an authenticated GitHub workflow. Select the named action under <strong>Run workflow</strong> on the main branch.</p>
-<div class="buttons"><a class="primary" href="https://github.com/pawansatoshi/FLOP-Agent/actions/workflows/control.yml">Start ↗</a><a href="https://github.com/pawansatoshi/FLOP-Agent/actions/workflows/control.yml">Stop ↗</a><a class="danger" href="https://github.com/pawansatoshi/FLOP-Agent/actions/workflows/control.yml">Emergency Halt ↗</a></div>
-</section>
+<body><main>
+<header><a class="brand" href="/"><span class="brand-icon">F</span> FLOP-Agent</a><a class="header-link" href="https://testnet.flopscan.io/">Open FLOPScan ↗</a></header>
+<section class="hero"><div><p class="eyebrow"><i class="live-dot"></i> FLOP NETWORK · TESTNET</p><h1>Agent Control Center</h1><p class="hero-copy">A calm, verified view of your agent and the network.</p></div><div class="mode-card"><span class="label">EXECUTION MODE</span><strong id="mode">MONITOR_ONLY</strong><span id="updated" role="status">Connecting to Testnet…</span></div></section>
+<div class="stats-grid"><section class="stat"><span class="label">NETWORK</span><strong id="network-status">Checking</strong><span id="chain-short">FLOP Testnet</span></section><section class="stat"><span class="label">LAST HEARTBEAT</span><strong id="heartbeat-time">Checking</strong><span id="heartbeat-result">Waiting for GitHub run</span></section><section class="stat"><span class="label">NEXT SCHEDULED RUN</span><strong id="next-run">Checking</strong><span id="next-run-label">Hourly · GitHub Actions</span></section></div>
+<div class="cards">
+<section class="card"><div class="card-head"><div><p class="eyebrow">IDENTITY</p><h2>Agent wallet</h2></div><span id="wallet-state" class="pill">Not connected</span></div><strong class="balance" id="balance">—</strong><span class="muted">Available Testnet FLOP</span><dl><dt>SS58 address</dt><dd id="address">Awaiting wallet</dd><dt>Decentralized identifier</dt><dd id="did">Awaiting wallet</dd></dl><a class="text-link" href="/identity.html" download="flop-agent-identity.html">Download offline wallet tool ↓</a></section>
+<section class="card"><div class="card-head"><div><p class="eyebrow">TESTNET TOKENS</p><h2>Faucet</h2></div><span id="faucet-pill" class="pill">Checking</span></div><dl><dt>Availability</dt><dd id="faucet">Checking</dd><dt>Last claim</dt><dd id="claim">No claim recorded</dd><dt>Cooldown countdown</dt><dd id="cooldown">—</dd><dt>Rollover conditions</dt><dd id="rollover">Official eligibility applies</dd></dl><a class="text-link" href="https://faucet.flop.network/limits">Official faucet limits ↗</a></section>
+<section class="card"><div class="card-head"><div><p class="eyebrow">COMPUTE MARKET</p><h2>Inference</h2></div><span id="gateway-pill" class="pill">Checking</span></div><dl><dt>Available models</dt><dd id="models">—</dd><dt>Verified spend</dt><dd id="spend">No verified spend recorded</dd><dt>Finalized settlements</dt><dd id="settlements">No verified settlement recorded</dd></dl><div class="note-row"><span>Testnet FLOP only</span><span id="scoring">Scoring unverified</span></div></section>
+<section class="card"><div class="card-head"><div><p class="eyebrow">OPERATOR</p><h2>Agent controls</h2></div><span id="control-pill" class="pill">Read only</span></div><p class="muted">Sign in to GitHub with repository write access to authorize an action. Credentials stay on GitHub.</p><div class="buttons"><a class="primary" href="https://github.com/pawansatoshi/FLOP-Agent/actions/workflows/control.yml">Start ↗</a><a href="https://github.com/pawansatoshi/FLOP-Agent/actions/workflows/control.yml">Stop ↗</a><a class="danger" href="https://github.com/pawansatoshi/FLOP-Agent/actions/workflows/control.yml">Emergency halt ↗</a></div><dl><dt>Control state</dt><dd id="control">Checking</dd><dt>Finalized chain</dt><dd id="chain">Checking</dd></dl></section>
 </div>
-<section class="runs"><h2>Execution logs</h2><p id="scheduled">Checking scheduled heartbeat…</p><ul id="runs"></ul></section>
-<footer><a href="https://github.com/pawansatoshi/FLOP-Agent/blob/main/SECURITY.md">Android setup ↗</a><a href="https://github.com/pawansatoshi/FLOP-Agent">Source ↗</a></footer>
-</main>
-</body>
-</html>
+<div class="lower-grid"><section class="card activity-card"><div class="card-head"><div><p class="eyebrow">LAST 24 HOURS</p><h2>Agent activity</h2></div><span id="activity-total" class="muted">—</span></div><div class="chart" id="activity-chart" role="img" aria-label="Heartbeat activity over the past 24 hours"><svg viewBox="0 0 720 190" aria-hidden="true" preserveAspectRatio="none"></svg><div id="chart-empty" class="chart-empty">No heartbeat history for this period</div></div><div class="legend"><span><i class="legend-success"></i>Successful heartbeat</span><span><i class="legend-other"></i>Other result</span></div></section><section class="card runs"><div class="card-head"><div><p class="eyebrow">VERIFIED WORKFLOW EVENTS</p><h2>Execution log</h2></div><a href="https://github.com/pawansatoshi/FLOP-Agent/actions">All runs ↗</a></div><p id="scheduled" class="muted">Checking scheduled heartbeat…</p><ul id="runs"></ul></section></div>
+<footer><span>FLOP-Agent · Testnet only</span><nav><a href="https://github.com/pawansatoshi/FLOP-Agent/blob/main/SECURITY.md">Android wallet setup ↗</a><a href="https://github.com/pawansatoshi/FLOP-Agent">Source ↗</a></nav></footer>
+</main></body></html>

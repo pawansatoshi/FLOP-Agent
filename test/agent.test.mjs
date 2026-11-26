@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { createPublicKey, randomBytes, verify } from 'node:crypto'
-import { mkdtempSync, rmSync, statSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { d10AgentClaimMessage } from '@flop-labs/sdk'
@@ -230,4 +230,12 @@ test('dashboard activity chart counts only monitor runs within the last 24 hours
   assert.equal(series.length, 12)
   assert.equal(series.at(-1).total, 2)
   assert.equal(series.at(-1).successful, 1)
+})
+
+test('dashboard JavaScript references only elements in the production page', () => {
+  const html = readFileSync(new URL('../public/index.html', import.meta.url), 'utf8')
+  const script = readFileSync(new URL('../public/dashboard.js', import.meta.url), 'utf8')
+  const ids = new Set([...html.matchAll(/\bid="([^"]+)"/g)].map(match => match[1]))
+  const referenced = [...script.matchAll(/(?:display|pill)\('([^']+)'/g)].map(match => match[1])
+  assert.deepEqual([...new Set(referenced.filter(id => !ids.has(id)))], [])
 })

@@ -23,6 +23,16 @@ try {
     if (!isHash(blockHash) || !readClaim(journal, expected.address)) throw new Error('MATCHING_CLAIM_REQUIRED')
     await reconcileClaim(journal, blockHash, executionMode, checkpoint)
   } else if (action === 'start' || action === 'resume') {
+    const checkControl = async () => {
+      const env = { ...process.env }
+      delete env.FLOP_ED25519_SEED
+      try {
+        execFileSync('bash', ['scripts/control.sh', 'check'], { env, stdio: 'pipe', timeout: 15000 })
+      } catch {
+        throw new Error('SIGNER_STOPPED_OR_CONTROL_UNAVAILABLE')
+      }
+    }
+    await checkControl()
     const encoded = process.env.FLOP_ED25519_SEED
     delete process.env.FLOP_ED25519_SEED
     if (!/^[a-f0-9]{64}$/.test(encoded ?? '')) throw new Error('SIGNING_SECRET_REQUIRED')
@@ -32,7 +42,7 @@ try {
       seed.fill(0)
       if (identity.publicKey !== publicKey) throw new Error('IDENTITY_MISMATCH')
       const claim = await requestClaim({ path: journal, identity, executionMode, approved: true, checkpoint,
-        resumeOnly: action === 'resume' })
+        resumeOnly: action === 'resume', beforeSubmit: checkControl })
       if (claim.status === 'pending' && isHash(claim.hash)) {
         await reconcileClaim(journal, undefined, executionMode, checkpoint)
       }

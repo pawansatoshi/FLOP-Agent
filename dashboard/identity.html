@@ -26,6 +26,12 @@ output{display:block;overflow-wrap:anywhere}label{display:block}hr{margin:2rem 0
 'use strict'
 const elements = Object.fromEntries(['pass','generate','backup','restore','provision','signing-label','signing','clear','status']
   .map(id => [id, document.getElementById(id)]))
+if (location.protocol !== 'file:' && location.protocol !== 'content:') {
+  elements.generate.disabled = true
+  elements.restore.disabled = true
+  elements.status.textContent = 'Download this HTML file and open the saved copy offline.'
+  throw new Error('LOCAL_COPY_REQUIRED')
+}
 const encoder = new TextEncoder()
 const aad = encoder.encode('flop-agent-ed25519-backup:v1')
 const rounds = 600000

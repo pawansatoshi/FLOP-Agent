@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>FLOP-Agent · Testnet dashboard</title>
+<link rel="stylesheet" href="/style.css">
+<script type="module" src="/dashboard.js"></script>
+</head>
+<body>
+<main>
+<header><a class="brand" href="/">FLOP-Agent</a><a href="https://testnet.flopscan.io/">FLOPScan ↗</a></header>
+<div class="hero"><p class="eyebrow">FLOP NETWORK TESTNET</p><h1>Agent dashboard</h1><p id="updated" role="status">Checking Testnet and GitHub Actions…</p></div>
+<div class="grid">
+<section><h2>Wallet</h2><strong class="balance" id="balance">—</strong><dl><dt>SS58 address</dt><dd id="address">Awaiting wallet</dd><dt>Decentralized identifier</dt><dd id="did">Awaiting wallet</dd></dl><a href="/identity.html" download="flop-agent-identity.html">Download offline wallet tool ↓</a></section>
+<section><h2>Faucet</h2><dl><dt>Availability</dt><dd id="faucet">Checking</dd><dt>Claim</dt><dd id="claim">Awaiting wallet</dd><dt>Cooldown</dt><dd id="cooldown">—</dd><dt>Rollover</dt><dd id="rollover">—</dd></dl></section>
+<section><h2>Inference and scoring</h2><dl><dt>Gateway</dt><dd id="gateway">Checking</dd><dt>Models</dt><dd id="models">—</dd><dt>Verified spend</dt><dd id="spend">0 recorded FLOP</dd><dt>Settlement history</dt><dd id="settlements">No agent settlements recorded</dd><dt>Scoring</dt><dd id="scoring">Activation unverified</dd></dl></section>
+<section><h2>Execution controls</h2><dl><dt>Control state</dt><dd id="control">Checking</dd><dt>Finalized chain</dt><dd id="chain">Checking</dd></dl><p>Controls open an authenticated GitHub workflow. Select the named action under <strong>Run workflow</strong> on the main branch.</p>
+<div class="buttons"><a class="primary" href="https://github.com/pawansatoshi/FLOP-Agent/actions/workflows/control.yml">Start ↗</a><a href="https://github.com/pawansatoshi/FLOP-Agent/actions/workflows/control.yml">Stop ↗</a><a class="danger" href="https://github.com/pawansatoshi/FLOP-Agent/actions/workflows/control.yml">Emergency Halt ↗</a></div>
+</section>
+</div>
+<section class="runs"><h2>Execution logs</h2><p id="scheduled">Checking scheduled heartbeat…</p><ul id="runs"></ul></section>
+<footer><a href="https://github.com/pawansatoshi/FLOP-Agent/blob/main/SECURITY.md">Android setup ↗</a><a href="https://github.com/pawansatoshi/FLOP-Agent">Source ↗</a></footer>
+</main>
+</body>
+</html>

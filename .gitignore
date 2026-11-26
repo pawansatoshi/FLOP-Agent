@@ -11,3 +11,5 @@ node_modules/
 report.json
 status.html
 flop-agent-encrypted*.json
+
+/node_modules

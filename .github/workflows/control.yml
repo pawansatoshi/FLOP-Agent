@@ -1,0 +1,52 @@
+name: FLOP operator controls
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: Start resumes the single faucet test. Stop pauses it. Halt also cancels active signer jobs.
+        type: choice
+        options: [start, stop, halt]
+        required: true
+permissions:
+  contents: write
+  actions: write
+concurrency:
+  group: flop-operator-control
+  cancel-in-progress: false
+jobs:
+  control:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Update signer control
+        env:
+          FLOP_PUBLIC_KEY: ${{ vars.FLOP_PUBLIC_KEY }}
+          CONTROL_ACTION: ${{ inputs.action }}
+        run: bash scripts/control.sh "$CONTROL_ACTION"
+      - name: Dispatch bounded unscored claim
+        if: inputs.action == 'start'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FLOP_MODE: ${{ vars.FLOP_MODE }}
+        run: |
+          if [[ "$FLOP_MODE" == INTEGRATION_TEST ]]; then
+            gh workflow run claim.yml --repo "$GITHUB_REPOSITORY" --ref main -f action=start
+          else
+            echo 'Signer requires INTEGRATION_TEST before dispatch.'
+          fi
+      - name: Cancel active signer runs
+        if: always() && inputs.action == 'halt'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          runs=$(gh api --paginate "repos/$GITHUB_REPOSITORY/actions/workflows/claim.yml/runs?branch=main" \
+            --jq '.workflow_runs[] | select(.status != "completed") | .id')
+          while read -r run; do
+            [[ -n "$run" ]] || continue
+            if ! gh api --method POST "repos/$GITHUB_REPOSITORY/actions/runs/$run/cancel"; then
+              [[ "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run" --jq .status)" == completed ]]
+            fi
+          done <<< "$runs"

@@ -19,7 +19,8 @@ case "$1" in
     ;;
   push)
     blob=$(git hash-object -w "$journal")
-    tree=$(printf '100644 blob %s\tjournal.sqlite\n' "$blob" | git mktree)
+    summary=$(node src/public-claim.mjs "$journal" | git hash-object -w --stdin)
+    tree=$(printf '100644 blob %s\tjournal.sqlite\n100644 blob %s\tpublic.json\n' "$blob" "$summary" | git mktree)
     parent=()
     if git show-ref --verify --quiet "$tracking"; then
       if [[ $(git rev-parse "$tracking^{tree}") == "$tree" ]]; then exit 0; fi

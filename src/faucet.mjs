@@ -63,7 +63,7 @@ async function runWithJournal(path, operation) {
 }
 
 export async function requestClaim({ path, identity, executionMode, approved, request = json,
-  transport = submitClaim, clock = Date.now, checkpoint = async () => {}, resumeOnly = false }) {
+  transport = submitClaim, clock = Date.now, checkpoint = async () => {}, resumeOnly = false, beforeSubmit = async () => {} }) {
   if (executionMode !== 'INTEGRATION_TEST' || approved !== true) throw new Error('OWNER_OPT_IN_REQUIRED')
   return withJournal(path, async db => {
     const bound = db.prepare('SELECT * FROM claims LIMIT 1').get()
@@ -99,6 +99,7 @@ export async function requestClaim({ path, identity, executionMode, approved, re
     }
 
     await checkpoint(path)
+    await beforeSubmit()
 
     // An interrupted request leaves the same nonce durably reserved for reconciliation.
     const outcome = await transport(identity, nonce).catch(() => ({ hash: null, retryAt: now + 300000 }))

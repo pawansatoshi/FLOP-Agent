@@ -12,13 +12,14 @@ on:
         type: string
   schedule:
     - cron: '41 3 * * *'
-permissions:
-  contents: write
+permissions: {}
 concurrency:
   group: flop-testnet-faucet
   cancel-in-progress: false
 jobs:
   claim:
+    permissions:
+      contents: write
     if: ${{ github.ref == 'refs/heads/main' && vars.FLOP_MODE == 'INTEGRATION_TEST' }}
     environment: flop-testnet-signer
     runs-on: ubuntu-latest
@@ -33,6 +34,9 @@ jobs:
         run: |
           umask 077
           bash scripts/claim-journal.sh pull "$RUNNER_TEMP/flop.sqlite"
+      - name: Check operator authorization before loading secret
+        if: ${{ github.event_name == 'schedule' || inputs.action == 'start' }}
+        run: bash scripts/control.sh check
       - name: Start or resume the single Testnet claim
         if: ${{ github.event_name == 'schedule' || inputs.action == 'start' }}
         env:

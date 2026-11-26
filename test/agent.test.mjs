@@ -198,3 +198,17 @@ test('hosted resume cannot create a fresh intent and checkpoint failures prevent
     rmSync(dir, { recursive: true })
   }
 })
+
+test('stopping after checkpoint prevents a hosted faucet submission', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'flop-'))
+  let checkpointed = false
+  try {
+    await assert.rejects(requestClaim({
+      path: join(dir, 'claims.sqlite'), identity: identityFromSeed(randomBytes(32)),
+      executionMode: 'INTEGRATION_TEST', approved: true, request: fakeRequest, clock: () => now,
+      checkpoint: async () => { checkpointed = true },
+      beforeSubmit: async () => { assert.ok(checkpointed); throw new Error('HALTED') },
+      transport: () => assert.fail('unsafe send')
+    }), /HALTED/)
+  } finally { rmSync(dir, { recursive: true }) }
+})

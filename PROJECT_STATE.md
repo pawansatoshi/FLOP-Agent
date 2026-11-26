@@ -46,3 +46,5 @@ The live SDK registry probe verified Qwen3-14B with a finalized BF16 measured ro
 ## Vercel dashboard and operator controls
 
 The dashboard consumes public GitHub run metadata, the journal summary, and verified FLOP snapshots. It is read-only on Vercel. Start, Stop and Halt route to GitHub's authenticated operator workflow. Only a writer can dispatch on main. The control workflow never loads wallet credentials. A missing or inaccessible control branch prevents signing. Live payment remains disabled.
+
+Production is available at [flop-agent.vercel.app](https://flop-agent.vercel.app/). The dashboard revision [cdec943](https://github.com/pawansatoshi/FLOP-Agent/commit/cdec9438cd1d6500958b2cda34b79a1c4411b7f8) passed [CI](https://github.com/pawansatoshi/FLOP-Agent/actions/runs/45819182175) and the [push-triggered heartbeat](https://github.com/pawansatoshi/FLOP-Agent/actions/runs/45819182264). Fourteen tests passed locally. The production status function returned live chain runtime 1014039, open faucet data and actual GitHub workflow links. The scheduled heartbeat is independently tracked from push-triggered runs.

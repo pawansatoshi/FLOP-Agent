@@ -4,6 +4,8 @@ FLOP-Agent monitors verified FLOP Testnet chain, faucet and gateway data. Its Gi
 
 ## Android administration
 
+Open the [production dashboard](https://flop-agent.vercel.app/) for Testnet and GitHub status, the downloadable offline wallet tool, and owner controls.
+
 1. Open the [heartbeat workflow](https://github.com/pawansatoshi/FLOP-Agent/actions/workflows/monitor.yml) in your browser. Use desktop site view if GitHub hides **Run workflow**.
 2. Open the latest successful run and read its **Summary**. A responsive HTML snapshot and its JSON data are available in the `flop-testnet-status` artifact. The summary uses India time.
 3. To publish the wallet’s optional public DID, address and balance, add `FLOP_PUBLIC_KEY` under **Settings → Secrets and variables → Actions → Variables**. Use the 64 lowercase hex characters from the public key. The workflow only reads public data.
@@ -34,6 +36,6 @@ For a cost estimate without buying inference, save a public-safe prompt to a fil
 
 ## One-time hosted Testnet claim
 
-Follow the [Android provisioning steps](SECURITY.md), then open [FLOP unscored faucet integration](https://github.com/pawansatoshi/FLOP-Agent/actions/workflows/claim.yml) and dispatch **start** once on `main`. A daily continuation at 09:11 IST resumes a pending nonce or a bounded finalized-block scan. If the matching finalized block is already known, dispatch **reconcile** with its block hash to avoid waiting for the scan.
+Follow the [Android provisioning steps](SECURITY.md), then open [FLOP operator controls](https://github.com/pawansatoshi/FLOP-Agent/actions/workflows/control.yml) and dispatch **start** once on `main`. The operator workflow authenticates through GitHub and dispatches the bounded claim. A daily continuation at 09:11 IST resumes a pending nonce or a bounded finalized-block scan. If the matching finalized block is already known, dispatch **reconcile** with its block hash to avoid waiting for the scan.
 
 The hosted mode does not start a second grant. Rollover requires verified prior spend and is blocked. `node src/cli.mjs direct-readiness` checks finalized model registry data and the public offer feed. `node src/cli.mjs verify-settlement CHANNEL_HASH BLOCK_HASH TX_HASH MAX_PLANCK` checks an independently identified on-chain settlement. A matching event establishes a channel payout, not that an arbitrary gateway request used that channel.

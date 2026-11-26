@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Move the hourly read-only heartbeat to minute 37 UTC to avoid the top-of-hour Actions queue period; align the dashboard countdown and schedule test.
+
 ## 0.1.0 · 2026-11-26
 
 - Added a pinned SDK, live Testnet chain and runtime verification, faucet and model catalog status, and a mobile status page.

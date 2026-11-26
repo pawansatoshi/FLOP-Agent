@@ -11,7 +11,7 @@ const controlModes = ['RUNNING', 'STOPPED', 'HALTED']
 export function nextHeartbeat(now = new Date()) {
   const next = new Date(now)
   next.setUTCSeconds(0, 0)
-  next.setUTCMinutes(7)
+  next.setUTCMinutes(37)
   if (next <= now) next.setUTCHours(next.getUTCHours() + 1)
   return next.toISOString()
 }

@@ -254,9 +254,9 @@ test('stopping after checkpoint prevents a hosted faucet submission', async () =
   } finally { rmSync(dir, { recursive: true }) }
 })
 
-test('dashboard schedule reports the next UTC minute 07 without rounding down', () => {
-  assert.equal(nextHeartbeat(new Date('2026-11-26T13:06:30Z')), '2026-11-26T13:07:00.000Z')
-  assert.equal(nextHeartbeat(new Date('2026-11-26T13:07:00Z')), '2026-11-26T14:07:00.000Z')
+test('dashboard schedule reports the next UTC minute 37 without rounding down', () => {
+  assert.equal(nextHeartbeat(new Date('2026-11-26T13:36:30Z')), '2026-11-26T13:37:00.000Z')
+  assert.equal(nextHeartbeat(new Date('2026-11-26T13:37:00Z')), '2026-11-26T14:37:00.000Z')
 })
 
 test('dashboard activity chart counts only monitor runs within the last 24 hours', () => {

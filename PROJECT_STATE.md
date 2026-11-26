@@ -15,14 +15,14 @@ Default mode is **MONITOR_ONLY**. The public Testnet project page reports an uns
 
 Implementation commit [fa230ea](https://github.com/pawansatoshi/FLOP-Agent/commit/fa230eabcb328c95e52929fd0c95dd1bf96ec669) passed all 11 local tests. The staged-source credential-pattern scan found no matches, and npm audit reported zero vulnerabilities. [GitHub CI](https://github.com/pawansatoshi/FLOP-Agent/actions/runs/45809684290) passed install, tests and audit.
 
-The [push-triggered heartbeat](https://github.com/pawansatoshi/FLOP-Agent/actions/runs/45809684370) passed live Testnet verification and produced the mobile summary and `flop-testnet-status` artifact. The hourly schedule is configured at minute 17. A cron-triggered run has not yet been observed. The monitor uses public endpoints and GitHub-hosted runners for this public repository.
+The [push-triggered heartbeat](https://github.com/pawansatoshi/FLOP-Agent/actions/runs/45809684370) passed live Testnet verification and produced the mobile summary and `flop-testnet-status` artifact. The initial hourly schedule was configured at minute 17. The follow-up moved it to minute 37 to obtain an earlier scheduled verification. A cron-triggered run has not yet been observed. The monitor uses public endpoints and GitHub-hosted runners for this public repository.
 
 ## Remaining release gates
 
 - The dedicated production key was not created or provisioned. The owner must keep the generated seed and recovery copy in owner-controlled storage.
 - A live faucet claim has not been submitted. Tests exercise simulated transport, durable reconciliation and event matching. The CLI requires explicit opt-in for an unscored claim.
 - The Testnet gateway purchase route, native direct session spending, request-to-finalized-settlement attribution and eligibility remain unverified. Inference purchasing and rollover are disabled. No transaction, settlement or reward is recorded.
-- Local transaction operations require persistent owner-controlled storage. There is no cloud signer or autonomous scheduled transaction workflow in this release.
+- Local transaction operations use persistent owner-controlled storage. Hosted one-time claim support is described below.
 
 ## Official references
 
@@ -40,3 +40,5 @@ The signer and checkpoint workflow supports an owner-provisioned Ed25519 key and
 The gateway wallet capability probe returned HTTP 404 on both documented path aliases. Gateway OpenAPI marks wallet enrollment Devnet-only and describes the disabled-route 404. Testnet connect options returned 200, but connect grants and preflight require a bearer credential. FLOP’s direct-session documentation describes a reachable, opted-in miner endpoint. The published SDK uses the explorer session-offer feed for signed spot offers, and the Testnet feed returned 404. Catalog addresses do not identify reachable miner endpoints. No paid alternative was used.
 
 A read-only settlement verifier now distinguishes a finalized payout on the expected channel from an outstanding challenge or a failed or over-budget extrinsic. Issuing a payment remains disabled pending a qualified Testnet direct endpoint. Official references include the [direct miner procedure](https://docs.flop.network/docs/send-to-specific-miner), the [published SDK](https://www.npmjs.com/package/@flop-labs/sdk/v/0.12.1), [release notes](https://github.com/flop-labs/network/releases), and [offer publication issue #306](https://github.com/flop-labs/network/issues/306).
+
+The live SDK registry probe verified Qwen3-14B with a finalized BF16 measured root at height 163582. Live Testnet metadata confirmed the documented `Settled` and `SettlementPosted` event shapes. An offline Chromium mobile viewport check passed encrypted download, wrong-passphrase rejection, recovery, seed-to-public-key matching and signing-value clearing. This was browser emulation. The physical Android device has not been tested. A local bare Git remote verified cross-run journal restoration and rejection of stale writes.
